@@ -1,0 +1,101 @@
+version: '3'
+
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: ldap
+    hostname: root
+    ports:
+#LDAP 표준 포트
+      - "389:389"  
+#LDAP SSL 포트
+      - "636:636"   
+    environment:
+      LDAP_ORGANISATION: "Siem stealer"
+      LDAP_DOMAIN: "siemstealer.ldap.org"
+      LDAP_ADMIN_PASSWORD: "1111"
+      LDAP_CONFIG_PASSWORD: "1111"
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: "readonly"
+      LDAP_READONLY_USER_PASSWORD: "1111"
+      LDAP_TLS: "false"
+      LDAP_TLS_VERIFY_CLIENT: "NORMAL"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - ldap_network
+
+  # LDAP 관리용 웹 인터페이스 (선택사항)
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldap
+    hostname: phpldapadmin
+    ports:
+      - "8080:80"
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    depends_on:
+      - openldap
+    networks:
+      - ldap_network
+  
+  # CoreDNS 서비스 추가
+  coredns:
+    image: coredns/coredns:latest
+    container_name: coredns
+    ports:
+      - "1053:1053/udp"
+      - "1053:1053/tcp" 
+    volumes:
+      - ./Corefile:/etc/coredns/Corefile 
+      - ./zonefile.db:/etc/coredns/zonefile.db 
+    networks:
+      - ldap_network
+    restart: always 
+
+   # ✅FTP + Filebeat 통합 컨테이너
+  ftp_server:
+    build: ./ftp_filebeat 
+    container_name: vsftpd
+    ports:
+      - "21:21"
+      - "20:20"
+      - "21100-21110:21100-21110"
+#    environment:
+#      - ELASTICSEARCH_HOST=http://<elasticsearch_ip>:9200
+    volumes:
+      - ./ftp_filebeat/vsftpd.conf:/etc/vsftpd.conf
+      - ./ftp_filebeat/entrypoint.sh:/entrypoint.sh
+      - /var/log/vsftpd:/var/log
+    entrypoint: ["/entrypoint.sh"]
+    networks:
+      - ldap_network
+    restart: unless-stopped
+
+  # Mysql
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ldap_network
+    restart: always  
+
+networks:
+  ldap_network:
+    driver: bridge
+
+volumes:
+  ldap_data:
+  ldap_config:
+  mysql_data:

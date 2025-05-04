@@ -1,0 +1,12 @@
+$TTL 86400
+@   IN  SOA ns1.siemstealer.ldap.org. admin.siemstealer.ldap.org. (
+            2025042801 ; Serial
+            3600       ; Refresh
+            1800       ; Retry
+            1209600    ; Expire
+            86400 )    ; Minimum TTL
+
+    IN  NS  ns1.siemstealer.ldap.org.
+
+ns1 IN  A   192.168.109.147
+www IN  A   192.168.109.147 

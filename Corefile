@@ -1,0 +1,11 @@
+. {
+    forward . 8.8.8.8 8.8.4.4 
+    log 
+    errors 
+    cache 3600 
+}
+
+siemstealer.ldap.org {
+    file /etc/coredns/zonefile.db 
+}
+
