@@ -1,3 +1,4 @@
+# dns
 $TTL 86400
 @   IN  SOA ns1.siemstealer.ldap.org. admin.siemstealer.ldap.org. (
             2025042801 ; Serial
